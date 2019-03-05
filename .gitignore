@@ -11,6 +11,11 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-/expressionist
+expressionist
 go.sum
 .idea
+
+# Local testing
+key.pem
+cert.pem
+alerts.yaml
