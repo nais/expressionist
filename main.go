@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -21,16 +23,27 @@ import (
 type Config struct {
 	LogFormat string
 	LogLevel  string
+	CertFile  string
+	KeyFile   string
 }
 
 func DefaultConfig() *Config {
 	return &Config{
 		LogFormat: "text",
 		LogLevel:  "info",
+		CertFile:  "/cert/cert.pem",
+		KeyFile:   "/cert/key.pem",
 	}
 }
 
 var config = DefaultConfig()
+
+func (c *Config) addFlags() {
+	flag.StringVar(&c.LogFormat, "log-format", c.LogFormat, "Log format, either 'json' or 'text'")
+	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Logging verbosity level")
+	flag.StringVar(&c.CertFile, "cert", c.CertFile, "File containing the x509 certificate for HTTPS")
+	flag.StringVar(&c.KeyFile, "key", c.KeyFile, "File containing the x509 private key")
+}
 
 func genericErrorResponse(format string, a ...interface{}) *v1beta1.AdmissionResponse {
 	return &v1beta1.AdmissionResponse{
@@ -132,9 +145,6 @@ func admitCallback(ar v1beta1.AdmissionReview) (*v1beta1.AdmissionResponse, erro
 }
 
 func reply(r *http.Request) (*v1beta1.AdmissionReview, error) {
-	var err error
-
-	// verify the content type is accurate
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
 		return nil, fmt.Errorf("contentType=%s, expect application/json", contentType)
@@ -181,9 +191,9 @@ func serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if review.Response.Allowed {
-		metrics.Admitted.Inc()
+		metrics.Validations.Inc()
 	} else {
-		metrics.Denied.Inc()
+		metrics.Failed.Inc()
 	}
 
 	encoder := json.NewEncoder(w)
@@ -191,6 +201,16 @@ func serve(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Errorf("while sending review response: %s", err)
 	}
+}
+
+func configTLS(config Config) (*tls.Config, error) {
+	sCert, err := tls.LoadX509KeyPair(config.CertFile, config.KeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("while loading certificate and key file: %s", err)
+	}
+	return &tls.Config{
+		Certificates: []tls.Certificate{sCert},
+	}, nil
 }
 
 func textFormatter() log.Formatter {
@@ -207,6 +227,9 @@ func jsonFormatter() log.Formatter {
 }
 
 func run() error {
+	config.addFlags()
+	flag.Parse()
+
 	switch config.LogFormat {
 	case "json":
 		log.SetFormatter(jsonFormatter())
@@ -224,15 +247,21 @@ func run() error {
 
 	log.Infof("Expressionist v%s (%s)", version.Version, version.Revision)
 
+	tlsConfig, err := configTLS(*config)
+	if err != nil {
+		return fmt.Errorf("while setting up TLS: %s", err)
+	}
+
 	go metrics.Serve(":8080", "/metrics", "/ready", "/alive")
 
 	http.HandleFunc("/", serve)
 	server := &http.Server{
-		Addr: ":8443",
+		Addr:      ":8443",
+		TLSConfig: tlsConfig,
 	}
 	err = server.ListenAndServeTLS("", "")
 	if err != nil {
-
+		return fmt.Errorf("while starting server: %s", err)
 	}
 
 	log.Info("Shutting down cleanly.")
