@@ -12,5 +12,10 @@ test:
 release:
 	go build -a -installsuffix cgo -o expressionist -ldflags "-s $(LDFLAGS)"
 
-docker:
-	docker build -t navikt/expressionist .
+setup-local:
+	./gen-cert.sh
+	./ca-bundle.sh
+	kubectl apply -f webhook.yaml
+
+local:
+	./expressionist --cert ./cert.pem --key ./key.pem
