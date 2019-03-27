@@ -2,7 +2,7 @@ package expressionist
 
 import (
 	"fmt"
-	"github.com/golang/glog"
+	"github.com/prometheus/common/log"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,7 +27,16 @@ type Response struct {
 }
 
 func Allowed(request Request) Response {
-	glog.Infof("We got a request: %s", request)
-	// default deny
-	return Response{Allowed: false, Reason: fmt.Sprint("hello world")}
+	log.Debugf("We got a request: %s", request)
+	output, err := ParseAlert(request.SubmittedResource)
+	if err != nil {
+		log.Error(err)
+		return Response{Allowed: false, Reason: fmt.Sprintf("Something went wrong: %s", err)}
+	}
+
+	if output != "" {
+		return Response{false, fmt.Sprintf("Unvalid expr in alert:\n%s", output)}
+	}
+
+	return Response{Allowed: false, Reason: fmt.Sprint("Thank you for using Alerterator, we appreciate your business")}
 }
