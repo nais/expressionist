@@ -69,23 +69,23 @@ func decode(raw []byte) (*expressionist.KubernetesResource, error) {
 	return k, nil
 }
 
-func admitCallback(ar v1beta1.AdmissionReview) (*v1beta1.AdmissionResponse, error) {
-	if ar.Request == nil {
+func admitCallback(admissionReview v1beta1.AdmissionReview) (*v1beta1.AdmissionResponse, error) {
+	if admissionReview.Request == nil {
 		return nil, fmt.Errorf("admission review request is empty")
 	}
 
-	previous, err := decode(ar.Request.OldObject.Raw)
+	previous, err := decode(admissionReview.Request.OldObject.Raw)
 	if err != nil {
 		return nil, fmt.Errorf("while decoding old resource: %s", err)
 	}
 
-	resource, err := decode(ar.Request.Object.Raw)
+	resource, err := decode(admissionReview.Request.Object.Raw)
 	if err != nil {
 		return nil, fmt.Errorf("while decoding resource: %s", err)
 	}
 
 	req := expressionist.Request{
-		UserInfo:          ar.Request.UserInfo,
+		UserInfo:          admissionReview.Request.UserInfo,
 		ExistingResource:  previous,
 		SubmittedResource: resource,
 	}
@@ -98,9 +98,9 @@ func admitCallback(ar v1beta1.AdmissionReview) (*v1beta1.AdmissionResponse, erro
 	}
 
 	if len(selfLink) > 0 {
-		log.Infof("Request '%s' from user '%s' in groups %+v", selfLink, ar.Request.UserInfo.Username, ar.Request.UserInfo.Groups)
+		log.Infof("Request '%s' from user '%s' in groups %+v", selfLink, admissionReview.Request.UserInfo.Username, admissionReview.Request.UserInfo.Groups)
 	} else {
-		log.Infof("Request from user '%s' in groups %+v", ar.Request.UserInfo.Username, ar.Request.UserInfo.Groups)
+		log.Infof("Request from user '%s' in groups %+v", admissionReview.Request.UserInfo.Username, admissionReview.Request.UserInfo.Groups)
 	}
 
 	// These checks are needed in order to avoid a null pointer exception in expressionist.Allowed().
@@ -126,11 +126,11 @@ func admitCallback(ar v1beta1.AdmissionReview) (*v1beta1.AdmissionResponse, erro
 	}
 
 	fields := log.Fields{
-		"user":        ar.Request.UserInfo.Username,
-		"groups":      ar.Request.UserInfo.Groups,
-		"namespace":   ar.Request.Namespace,
-		"operation":   ar.Request.Operation,
-		"subresource": ar.Request.SubResource,
+		"user":        admissionReview.Request.UserInfo.Username,
+		"groups":      admissionReview.Request.UserInfo.Groups,
+		"namespace":   admissionReview.Request.Namespace,
+		"operation":   admissionReview.Request.Operation,
+		"subresource": admissionReview.Request.SubResource,
 		"resource":    selfLink,
 	}
 	logEntry := log.WithFields(fields)
@@ -144,16 +144,16 @@ func admitCallback(ar v1beta1.AdmissionReview) (*v1beta1.AdmissionResponse, erro
 	return reviewResponse, nil
 }
 
-func reply(r *http.Request) (*v1beta1.AdmissionReview, error) {
-	contentType := r.Header.Get("Content-Type")
+func reply(request *http.Request) (*v1beta1.AdmissionReview, error) {
+	contentType := request.Header.Get("Content-Type")
 	if contentType != "application/json" {
 		return nil, fmt.Errorf("contentType=%s, expect application/json", contentType)
 	}
 
 	var reviewResponse *v1beta1.AdmissionResponse
-	ar := v1beta1.AdmissionReview{}
+	admissionReview := v1beta1.AdmissionReview{}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := ioutil.ReadAll(request.Body)
 	if err != nil {
 		return nil, fmt.Errorf("while reading admission request: %s", err)
 	}
@@ -161,16 +161,16 @@ func reply(r *http.Request) (*v1beta1.AdmissionReview, error) {
 	log.Tracef("request: %s", string(data))
 
 	decoder := json.NewDecoder(bytes.NewReader(data))
-	err = decoder.Decode(&ar)
+	err = decoder.Decode(&admissionReview)
 	if err == nil {
-		reviewResponse, err = admitCallback(ar)
+		reviewResponse, err = admitCallback(admissionReview)
 	}
 
 	if err != nil {
 		reviewResponse = genericErrorResponse(err.Error())
 	}
 
-	reviewResponse.UID = ar.Request.UID
+	reviewResponse.UID = admissionReview.Request.UID
 
 	return &v1beta1.AdmissionReview{
 		Response: reviewResponse,
