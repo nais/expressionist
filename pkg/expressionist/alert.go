@@ -11,6 +11,10 @@ import (
 )
 
 type alert struct {
+	MetaData struct {
+		Name string
+	} `json:metadata`
+
 	Spec alertSpec
 }
 
@@ -39,6 +43,7 @@ func ParseAlert(alertObject metav1.Object) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed while unmarshling alertmanager.yml: %s", err)
 	}
+	log.Infof("Parsing alerts for %s", alert.MetaData.Name)
 
 	rules := rules{
 		Groups: []group{
