@@ -74,46 +74,22 @@ func admitCallback(admissionReview v1beta1.AdmissionReview) (*v1beta1.AdmissionR
 		return nil, fmt.Errorf("admission review request is empty")
 	}
 
-	previous, err := decode(admissionReview.Request.OldObject.Raw)
-	if err != nil {
-		return nil, fmt.Errorf("while decoding old resource: %s", err)
-	}
-
 	resource, err := decode(admissionReview.Request.Object.Raw)
 	if err != nil {
 		return nil, fmt.Errorf("while decoding resource: %s", err)
 	}
 
 	req := expressionist.Request{
-		UserInfo:          admissionReview.Request.UserInfo,
-		ExistingResource:  previous,
 		SubmittedResource: resource,
-	}
-
-	var selfLink string
-	if previous != nil {
-		selfLink = previous.GetSelfLink()
-	} else if resource != nil {
-		selfLink = resource.GetSelfLink()
-	}
-
-	if len(selfLink) > 0 {
-		log.Infof("Request '%s' from user '%s' in groups %+v", selfLink, admissionReview.Request.UserInfo.Username, admissionReview.Request.UserInfo.Groups)
-	} else {
-		log.Infof("Request from user '%s' in groups %+v", admissionReview.Request.UserInfo.Username, admissionReview.Request.UserInfo.Groups)
 	}
 
 	// These checks are needed in order to avoid a null pointer exception in expressionist.Allowed().
 	// Interfaces can be nil checked, but the instances they're pointing to can be nil and
 	// still pass through that check.
-	if previous == nil {
-		req.ExistingResource = nil
-	}
 	if resource == nil {
 		req.SubmittedResource = nil
 	}
 
-	log.Tracef("parsed/old: %+v", previous)
 	log.Tracef("parsed/new: %+v", resource)
 
 	response := expressionist.Allowed(req)
@@ -123,22 +99,6 @@ func admitCallback(admissionReview v1beta1.AdmissionReview) (*v1beta1.AdmissionR
 		Result: &metav1.Status{
 			Message: response.Reason,
 		},
-	}
-
-	fields := log.Fields{
-		"user":        admissionReview.Request.UserInfo.Username,
-		"groups":      admissionReview.Request.UserInfo.Groups,
-		"namespace":   admissionReview.Request.Namespace,
-		"operation":   admissionReview.Request.Operation,
-		"subresource": admissionReview.Request.SubResource,
-		"resource":    selfLink,
-	}
-	logEntry := log.WithFields(fields)
-
-	if response.Allowed {
-		logEntry.Infof("Request allowed: %s", response.Reason)
-	} else {
-		logEntry.Warningf("Request denied: %s", response.Reason)
 	}
 
 	return reviewResponse, nil
