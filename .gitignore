@@ -19,3 +19,4 @@ go.sum
 key.pem
 cert.pem
 alerts.yaml
+webhook.yaml
