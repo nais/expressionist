@@ -28,7 +28,7 @@ type Response struct {
 
 func Allowed(request Request) Response {
 	log.Debugf("We got a request: %s", request)
-	output, err := ParseAlert(request.SubmittedResource)
+	output, err := ParseAlert(request.SubmittedResource.GetAnnotations()["kubectl.kubernetes.io/last-applied-configuration"])
 	if err != nil {
 		log.Error(err)
 		return Response{Allowed: false, Reason: fmt.Sprintf("Something went wrong: %s", err)}

@@ -7,7 +7,6 @@ import (
 	"os/exec"
 
 	"gopkg.in/yaml.v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type alert struct {
@@ -36,10 +35,9 @@ type group struct {
 	Rules []rule
 }
 
-func ParseAlert(alertObject metav1.Object) (string, error) {
-	last := alertObject.GetAnnotations()["kubectl.kubernetes.io/last-applied-configuration"]
+func ParseAlert(applied string) (string, error) {
 	var alert alert
-	err := yaml.Unmarshal([]byte(last), &alert)
+	err := yaml.Unmarshal([]byte(applied), &alert)
 	if err != nil {
 		return "", fmt.Errorf("failed while unmarshling alertmanager.yml: %s", err)
 	}
