@@ -1,0 +1,74 @@
+defaults: &defaults
+  docker:
+  - image: circleci/golang:1.12
+
+version: 2
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run:
+          name: Create workspace
+          command: mkdir -p /tmp/workspace
+      - run:
+          name: Build Docker container
+          command: docker build -t navikt/expressionist:latest .
+      - run:
+          name: Save Docker container
+          command: docker save navikt/expressionist:latest -o /tmp/workspace/docker-image.tar
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - docker-image.tar
+  release:
+    <<: *defaults
+    steps:
+      - setup_remote_docker
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "b6:50:5e:fa:cb:06:64:ec:28:fe:20:8e:f9:d3:d1:f0"
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load Docker container
+          command: docker load -i /tmp/workspace/docker-image.tar
+      - run:
+          name: Login to Dockerhub
+          command: docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
+      - run:
+          name: Push Docker container
+          command: |
+            version=$(./version.sh)
+            docker tag navikt/expressionist:latest navikt/expressionist:${version}
+            docker push navikt/expressionist:latest
+            docker push navikt/expressionist:${version}
+      - run:
+          name: Deploy new version to Kubernetes
+          command: |
+            version=$(./version.sh)
+            naisyaml=$(mktemp -d)
+            res="deployment-resources"
+            static_file="${naisyaml}/templates/zz-generated-expressionist.yaml"
+            git clone git@github.com:navikt/nais-yaml $naisyaml
+            cat $res/03-deployment.yaml > $naisyaml/templates/expressionist.yaml
+            cat $res/00-namespace.yaml $res/01-serviceaccount.yaml $res/02-clusterrolebinding.yaml webhook.yaml > $static_file
+            cd $naisyaml
+            sed -E -i "s#image: navikt/expressionist:.+#image: navikt/expressionist:${version}#" vars/expressionist.yaml
+            git add .
+            git --no-pager diff --cached
+            git commit -a -m "Bump Expressionist to version ${version}"
+            git push
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - build
+      - release:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
