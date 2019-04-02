@@ -212,7 +212,7 @@ func run() error {
 		return fmt.Errorf("while setting up TLS: %s", err)
 	}
 
-	go metrics.Serve(":8080", "/metrics", "/ready", "/alive")
+	go metrics.Serve(":8080", "/metrics", "/isReady", "/isAlive")
 
 	http.HandleFunc("/", serve)
 	server := &http.Server{
