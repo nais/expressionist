@@ -2,7 +2,7 @@ package expressionist
 
 import (
 	"fmt"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os/exec"
 
@@ -12,7 +12,7 @@ import (
 type alert struct {
 	MetaData struct {
 		Name string
-	} `json:metadata`
+	} `json:"metadata"`
 
 	Spec alertSpec
 }

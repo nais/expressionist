@@ -2,7 +2,7 @@ package expressionist
 
 import (
 	"fmt"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -35,8 +35,8 @@ func Allowed(request Request) Response {
 	}
 
 	if output != "" {
-		return Response{false, fmt.Sprintf("Unvalid expr in alert:\n%s", output)}
+		return Response{false, fmt.Sprintf("Invalid expr in alert:\n%s", output)}
 	}
 
-	return Response{Allowed: false, Reason: fmt.Sprint("Thank you for using Alerterator, we appreciate your business")}
+	return Response{Allowed: true, Reason: fmt.Sprint("Thank you for using Alerterator, we appreciate your business")}
 }
