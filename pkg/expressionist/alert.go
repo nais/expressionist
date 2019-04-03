@@ -5,6 +5,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os/exec"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -52,30 +53,32 @@ func ParseAlert(applied string) (string, error) {
 		},
 	}
 
-	err = writeRulesToFile(rules)
+	filename := strings.Split(alert.MetaData.Name, ".")[0]
+	filepath := fmt.Sprintf("/tmp/%s.yaml", filename)
+	err = writeRulesToFile(filepath, rules)
 	if err != nil {
 		return "", err
 	}
 
-	return validateRulesInFile(), nil
+	return validateRulesInFile(filepath), nil
 }
 
-func writeRulesToFile(rules rules) error {
+func writeRulesToFile(filepath string, rules rules) error {
 	data, err := yaml.Marshal(&rules)
 	if err != nil {
 		return fmt.Errorf("failed while marshaling rules to file: %s", err)
 	}
 
-	err = ioutil.WriteFile("/tmp/rules.yaml", data, 0644)
+	err = ioutil.WriteFile(filepath, data, 0644)
 	if err != nil {
 		return fmt.Errorf("failed while writing rules to file: %s", err)
 	}
 	return nil
 }
 
-func validateRulesInFile() string {
+func validateRulesInFile(filepath string) string {
 	tool := "promtool"
-	args := []string{"check", "rules", "/tmp/rules.yaml"}
+	args := []string{"check", "rules", filepath}
 	cmd := exec.Command(tool, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
