@@ -23,8 +23,9 @@ type alertSpec struct {
 }
 
 type rule struct {
-	Alert string
-	Expr  string
+	Alert       string
+	Expr        string
+	description string
 }
 
 type rules struct {
@@ -36,13 +37,28 @@ type group struct {
 	Rules []rule
 }
 
-func ParseAlert(applied string) (string, error) {
+func ValidateDescription(applied string) error {
+	var alert alert
+	err := yaml.Unmarshal([]byte(applied), &alert)
+	if err != nil {
+		return fmt.Errorf("failed while unmarshling alertmanager.yml: %s", err)
+	}
+
+	for _, rule := range alert.Spec.Alerts {
+		if strings.HasPrefix(rule.description, "{{") {
+			return fmt.Errorf("missing quotation around 'description'")
+		}
+	}
+
+	return nil
+}
+
+func ValidateExpr(applied string) (string, error) {
 	var alert alert
 	err := yaml.Unmarshal([]byte(applied), &alert)
 	if err != nil {
 		return "", fmt.Errorf("failed while unmarshling alertmanager.yml: %s", err)
 	}
-	log.Infof("Parsing alerts for %s", alert.MetaData.Name)
 
 	rules := rules{
 		Groups: []group{
@@ -57,7 +73,7 @@ func ParseAlert(applied string) (string, error) {
 	filepath := fmt.Sprintf("/tmp/%s.yaml", filename)
 	err = writeRulesToFile(filepath, rules)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%s: %s", filename, err)
 	}
 
 	return validateRulesInFile(filepath), nil
