@@ -26,8 +26,8 @@ type Response struct {
 	Reason  string
 }
 
-func parseExpr(applied string) Response {
-	output, err := ParseExpr(applied)
+func validateExpr(applied string) Response {
+	output, err := ValidateExpr(applied)
 	if err != nil {
 		log.Error(err)
 		return Response{Allowed: false, Reason: fmt.Sprintf("Something went wrong: %s", err)}
@@ -40,8 +40,8 @@ func parseExpr(applied string) Response {
 	return Response{Allowed: true}
 }
 
-func parseDescription(applied string) Response {
-	err := ParseDescription(applied)
+func validateDescription(applied string) Response {
+	err := ValidateDescription(applied)
 	if err != nil {
 		log.Error(err)
 		return Response{Allowed: false, Reason: fmt.Sprintf("Failed parsing description field: %s", err)}
@@ -54,11 +54,11 @@ func Allowed(request Request) Response {
 	log.Debugf("We got a request: %s", request)
 	applied := request.SubmittedResource.GetAnnotations()["kubectl.kubernetes.io/last-applied-configuration"]
 
-	response := parseExpr(applied)
+	response := validateExpr(applied)
 	if !response.Allowed {
 		return response
 	}
-	response = parseDescription(applied)
+	response = validateDescription(applied)
 	if !response.Allowed {
 		return response
 	}

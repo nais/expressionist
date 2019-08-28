@@ -9,13 +9,13 @@ import (
 func TestParseAlert(t *testing.T) {
 
 	t.Run("No output when valid", func(t *testing.T) {
-		output, err := ParseExpr(fixtures.ValidConfiguration)
+		output, err := ValidateExpr(fixtures.ValidConfiguration)
 		assert.NoError(t, err)
 		assert.Empty(t, output)
 	})
 
 	t.Run("Some output when not valid", func(t *testing.T) {
-		output, err := ParseExpr(fixtures.NotValidConfiguration)
+		output, err := ValidateExpr(fixtures.NotValidConfiguration)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, output)
 	})

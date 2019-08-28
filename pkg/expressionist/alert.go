@@ -37,7 +37,7 @@ type group struct {
 	Rules []rule
 }
 
-func ParseDescription(applied string) error {
+func ValidateDescription(applied string) error {
 	var alert alert
 	err := yaml.Unmarshal([]byte(applied), &alert)
 	if err != nil {
@@ -53,7 +53,7 @@ func ParseDescription(applied string) error {
 	return nil
 }
 
-func ParseExpr(applied string) (string, error) {
+func ValidateExpr(applied string) (string, error) {
 	var alert alert
 	err := yaml.Unmarshal([]byte(applied), &alert)
 	if err != nil {
