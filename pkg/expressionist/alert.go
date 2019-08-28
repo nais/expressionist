@@ -59,7 +59,6 @@ func ParseExpr(applied string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed while unmarshling alertmanager.yml: %s", err)
 	}
-	log.Infof("Parsing alerts for %s", alert.MetaData.Name)
 
 	rules := rules{
 		Groups: []group{
@@ -74,7 +73,7 @@ func ParseExpr(applied string) (string, error) {
 	filepath := fmt.Sprintf("/tmp/%s.yaml", filename)
 	err = writeRulesToFile(filepath, rules)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%s: %s", filename, err)
 	}
 
 	return validateRulesInFile(filepath), nil

@@ -90,8 +90,6 @@ func admitCallback(admissionReview v1beta1.AdmissionReview) (*v1beta1.AdmissionR
 		req.SubmittedResource = nil
 	}
 
-	log.Tracef("parsed/new: %+v", resource)
-
 	response := expressionist.Allowed(req)
 
 	reviewResponse := &v1beta1.AdmissionResponse{
@@ -117,8 +115,6 @@ func reply(request *http.Request) (*v1beta1.AdmissionReview, error) {
 	if err != nil {
 		return nil, fmt.Errorf("while reading admission request: %s", err)
 	}
-
-	log.Tracef("request: %s", string(data))
 
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	err = decoder.Decode(&admissionReview)
