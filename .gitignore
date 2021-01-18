@@ -13,6 +13,7 @@
 
 /expressionist
 go.sum
+vendor/
 .idea
 
 # Local testing
