@@ -6,8 +6,10 @@ ENV CGO_ENABLED=0
 COPY --from=promtool /bin/promtool /bin
 
 WORKDIR /workspace
+COPY go.* .
+RUN go mod download
+
 COPY . .
-RUN go get
 RUN go test ./...
 RUN go build -a -installsuffix cgo -o expressionist
 

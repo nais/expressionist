@@ -12,7 +12,6 @@
 *.out
 
 /expressionist
-go.sum
 vendor/
 .idea
 
