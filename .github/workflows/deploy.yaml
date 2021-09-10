@@ -1,6 +1,8 @@
 name: Build and deploy
 on: push
 
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
 jobs:
   build-push:
     name: Build and push image
@@ -8,39 +10,39 @@ jobs:
     steps:
       - name: Checkout expressionist
         uses: actions/checkout@v2
+      - run: |
+          export version=$(date '+%Y-%m-%d')-$(git --no-pager log -1 --pretty=%h)
+          echo "IMAGE=${IMAGE}:${version}" >> $GITHUB_ENV
+          echo "::set-output name=version::${version}"
       - run: docker build -t docker.pkg.github.com/"$GITHUB_REPOSITORY"/expressionist:$(./version.sh) .
-      - name: Login to Github Package Registry
-        env:
-          DOCKER_USERNAME: x-access-token
-          DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin docker.pkg.github.com
-      - run: docker push docker.pkg.github.com/"$GITHUB_REPOSITORY"/expressionist:$(./version.sh)
+      - uses: docker/login-action@ab80d026d4753220c4243394c07c7d80f9638d06 # Use commit-sha1 instead of tag for security concerns
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}
 
   nais-yaml:
     name: Release to nais-yaml
     runs-on: ubuntu-latest
     needs: build-push
     steps:
-      - name: Checkout expressionist
-        uses: actions/checkout@v2
-        with:
-          path: expressionist
       - name: Checkout nais-yaml
         uses: actions/checkout@v2
         with:
           repository: navikt/nais-yaml
           token: ${{ secrets.SRVNAIS_REPO_PUSH_PAT }}
-          path: nais-yaml
       - name: Update nais-yaml
         run: |
-          cd expressionist
-          version=$(./version.sh)
+          export version=${{ steps.vars.outputs.sha_short }}
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-          cd ../nais-yaml
-          git config user.name expressionist-actions
-          git config user.email expressionist-actions@github.com
-
-          sed -E -i "s#image: docker.pkg.github.com/"$GITHUB_REPOSITORY"/expressionist:.+#image: docker.pkg.github.com/"$GITHUB_REPOSITORY"/expressionist:${version}#" vars/global.yaml
+          sed -E -i "s#image: docker.pkg.github.com/"$GITHUB_REPOSITORY"/expressionist:.+#image: ${IMAGE} :${version}#" vars/global.yaml
           git add .
           git --no-pager diff --cached
           git commit --no-verify -a -m "Bump Expressionist to version ${version}"
