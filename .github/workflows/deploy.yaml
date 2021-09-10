@@ -14,7 +14,6 @@ jobs:
           export version=$(date '+%Y-%m-%d')-$(git --no-pager log -1 --pretty=%h)
           echo "IMAGE=${IMAGE}:${version}" >> $GITHUB_ENV
           echo "::set-output name=version::${version}"
-      - run: docker build -t docker.pkg.github.com/"$GITHUB_REPOSITORY"/expressionist:$(./version.sh) .
       - uses: docker/login-action@ab80d026d4753220c4243394c07c7d80f9638d06 # Use commit-sha1 instead of tag for security concerns
         with:
           registry: ghcr.io
