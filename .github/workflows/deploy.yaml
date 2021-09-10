@@ -37,11 +37,11 @@ jobs:
           token: ${{ secrets.SRVNAIS_REPO_PUSH_PAT }}
       - name: Update nais-yaml
         run: |
-          export version=${{ steps.vars.outputs.sha_short }}
+          export version=${{ steps.vars.outputs.version }}
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-          sed -E -i "s#image: docker.pkg.github.com/"$GITHUB_REPOSITORY"/expressionist:.+#image: ${IMAGE} :${version}#" vars/global.yaml
+          sed -E -i "s#image: ${IMAGE}:.+#image: ${IMAGE}:${version}#" vars/global.yaml
           git add .
           git --no-pager diff --cached
           git commit --no-verify -a -m "Bump Expressionist to version ${version}"
