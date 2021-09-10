@@ -37,6 +37,7 @@ jobs:
         with:
           repository: navikt/nais-yaml
           token: ${{ secrets.SRVNAIS_REPO_PUSH_PAT }}
+          path: nais-yaml
       - name: Update nais-yaml
         run: |
           cd expressionist
