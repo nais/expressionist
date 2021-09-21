@@ -11,12 +11,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/nais/expressionist/pkg/expressionist"
-	"github.com/nais/expressionist/pkg/metrics"
-	"github.com/nais/expressionist/pkg/version"
+	naisiov1 "github.com/nais/liberator/pkg/apis/nais.io/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+
+	"github.com/nais/expressionist/pkg/expressionist"
+	"github.com/nais/expressionist/pkg/metrics"
+	"github.com/nais/expressionist/pkg/version"
 )
 
 // Config contains the server (the webhook) cert and key.
@@ -54,19 +58,15 @@ func genericErrorResponse(format string, a ...interface{}) *v1beta1.AdmissionRes
 	}
 }
 
-func decode(raw []byte) (*expressionist.KubernetesResource, error) {
-	k := &expressionist.KubernetesResource{}
-	if len(raw) == 0 {
-		return nil, nil
-	}
+func decode(raw []byte) (*naisiov1.Alert, error) {
+	alert := &naisiov1.Alert{}
 
-	r := bytes.NewReader(raw)
-	decoder := json.NewDecoder(r)
-	if err := decoder.Decode(k); err != nil {
+	deserializer := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
+	if _, _, err := deserializer.Decode(raw, nil, alert); err != nil {
 		return nil, fmt.Errorf("while decoding Kubernetes resource: %s", err)
 	}
 
-	return k, nil
+	return alert, nil
 }
 
 func admitCallback(admissionReview v1beta1.AdmissionReview) (*v1beta1.AdmissionResponse, error) {
@@ -74,32 +74,31 @@ func admitCallback(admissionReview v1beta1.AdmissionReview) (*v1beta1.AdmissionR
 		return nil, fmt.Errorf("admission review request is empty")
 	}
 
-	resource, err := decode(admissionReview.Request.Object.Raw)
+	response := &v1beta1.AdmissionResponse{
+		Allowed: true,
+		Result: &metav1.Status{},
+	}
+
+	kind := admissionReview.Request.Kind.Kind
+	if kind != "Alert" {
+		return response, nil
+	}
+
+	alert, err := decode(admissionReview.Request.Object.Raw)
 	if err != nil {
 		return nil, fmt.Errorf("while decoding resource: %s", err)
 	}
-
 	req := expressionist.Request{
-		SubmittedResource: resource,
+		SubmittedResource: alert,
 	}
 
-	// These checks are needed in order to avoid a null pointer exception in expressionist.Allowed().
-	// Interfaces can be nil checked, but the instances they're pointing to can be nil and
-	// still pass through that check.
-	if resource == nil {
-		req.SubmittedResource = nil
+	result := expressionist.Allowed(req)
+	response.Allowed = result.Allowed
+	response.Result = &metav1.Status{
+		Message: result.Reason,
 	}
 
-	response := expressionist.Allowed(req)
-
-	reviewResponse := &v1beta1.AdmissionResponse{
-		Allowed: response.Allowed,
-		Result: &metav1.Status{
-			Message: response.Reason,
-		},
-	}
-
-	return reviewResponse, nil
+	return response, nil
 }
 
 func reply(request *http.Request) (*v1beta1.AdmissionReview, error) {

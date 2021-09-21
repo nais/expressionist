@@ -2,76 +2,30 @@ package expressionist
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os/exec"
-	"strings"
 
+	"github.com/nais/alerterator/controllers/rules"
+	"github.com/nais/alerterator/utils"
+	naisiov1 "github.com/nais/liberator/pkg/apis/nais.io/v1"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
-type alert struct {
-	MetaData struct {
-		Name string
-	} `json:"metadata"`
-
-	Spec alertSpec
-}
-
-type alertSpec struct {
-	Alerts []rule
-}
-
-type rule struct {
-	Alert       string
-	Expr        string
-	description string
-}
-
-type rules struct {
-	Groups []group
-}
-
-type group struct {
-	Name  string
-	Rules []rule
-}
-
-func ValidateDescription(applied string) error {
-	var alert alert
-	err := yaml.Unmarshal([]byte(applied), &alert)
-	if err != nil {
-		return fmt.Errorf("failed while unmarshling alertmanager.yml: %s", err)
-	}
-
-	for _, rule := range alert.Spec.Alerts {
-		if strings.HasPrefix(rule.description, "{{") {
-			return fmt.Errorf("missing quotation around 'description'")
-		}
-	}
-
-	return nil
-}
-
-func ValidateExpr(applied string) (string, error) {
-	var alert alert
-	err := yaml.Unmarshal([]byte(applied), &alert)
-	if err != nil {
-		return "", fmt.Errorf("failed while unmarshling alertmanager.yml: %s", err)
-	}
-
-	rules := rules{
-		Groups: []group{
+func ValidateRules(applied *naisiov1.Alert) (string, error) {
+	alertRules := rules.CreateAlertRules(applied)
+	alertGroups := rules.Groups{
+		Groups: []rules.Group{
 			{
-				Name:  "expressionist",
-				Rules: alert.Spec.Alerts,
+				Name:  utils.GetCombinedName(applied),
+				Rules: alertRules,
 			},
 		},
 	}
 
-	filename := strings.Split(alert.MetaData.Name, ".")[0]
+	filename := utils.GetCombinedName(applied)
 	filepath := fmt.Sprintf("/tmp/%s.yaml", filename)
-	err = writeRulesToFile(filepath, rules)
+	err := writeRulesToFile(filepath, alertGroups)
 	if err != nil {
 		return "", fmt.Errorf("%s: %s", filename, err)
 	}
@@ -79,7 +33,7 @@ func ValidateExpr(applied string) (string, error) {
 	return validateRulesInFile(filepath), nil
 }
 
-func writeRulesToFile(filepath string, rules rules) error {
+func writeRulesToFile(filepath string, rules rules.Groups) error {
 	data, err := yaml.Marshal(&rules)
 	if err != nil {
 		return fmt.Errorf("failed while marshaling rules to file: %s", err)

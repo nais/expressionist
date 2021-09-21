@@ -2,23 +2,13 @@ package expressionist
 
 import (
 	"fmt"
+
+	naisiov1 "github.com/nais/liberator/pkg/apis/nais.io/v1"
 	log "github.com/sirupsen/logrus"
-	authenticationv1 "k8s.io/api/authentication/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// KubernetesResource represents any Kubernetes resource with standard object metadata structures.
-type KubernetesResource struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-}
-
 type Request struct {
-	UserInfo             authenticationv1.UserInfo
-	ExistingResource     metav1.Object
-	SubmittedResource    metav1.Object
-	ClusterAdmins        []string
-	ServiceUserTemplates []string
+	SubmittedResource *naisiov1.Alert
 }
 
 type Response struct {
@@ -26,39 +16,25 @@ type Response struct {
 	Reason  string
 }
 
-func validateExpr(applied string) Response {
-	output, err := ValidateExpr(applied)
+func validateRules(applied *naisiov1.Alert) Response {
+	output, err := ValidateRules(applied)
 	if err != nil {
 		log.Error(err)
 		return Response{Allowed: false, Reason: fmt.Sprintf("Something went wrong: %s", err)}
 	}
 
 	if output != "" {
-		return Response{false, fmt.Sprintf("Invalid expr in alert:\n%s", output)}
-	}
-
-	return Response{Allowed: true}
-}
-
-func validateDescription(applied string) Response {
-	err := ValidateDescription(applied)
-	if err != nil {
-		log.Error(err)
-		return Response{Allowed: false, Reason: fmt.Sprintf("Failed parsing description field: %s", err)}
+		return Response{false, fmt.Sprintf("Invalid rules in alert:\n%s", output)}
 	}
 
 	return Response{Allowed: true}
 }
 
 func Allowed(request Request) Response {
-	log.Debugf("We got a request: %s", request)
-	applied := request.SubmittedResource.GetAnnotations()["kubectl.kubernetes.io/last-applied-configuration"]
+	log.Debugf("We got a request: %+v", request)
+	applied := request.SubmittedResource
 
-	response := validateExpr(applied)
-	if !response.Allowed {
-		return response
-	}
-	response = validateDescription(applied)
+	response := validateRules(applied)
 	if !response.Allowed {
 		return response
 	}
