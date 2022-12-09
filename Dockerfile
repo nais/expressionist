@@ -13,7 +13,7 @@ COPY . .
 RUN go test ./...
 RUN go build -a -installsuffix cgo -o expressionist
 
-FROM alpine:3.14
+FROM alpine:3.17
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=builder /workspace/expressionist /app/expressionist
