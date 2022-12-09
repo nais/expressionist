@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout expressionist
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - run: |
           export version=$(date '+%Y-%m-%d')-$(git --no-pager log -1 --pretty=%h)
           echo "IMAGE=${IMAGE}:${version}" >> $GITHUB_ENV
@@ -37,7 +37,7 @@ jobs:
     needs: build-push
     if: github.ref == 'refs/heads/master'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: expressionist
       - uses: navikt/github-app-token-generator@v1
@@ -47,7 +47,7 @@ jobs:
           app-id: ${{ secrets.NAIS_APP_ID }}
           repo: navikt/nais-yaml
       - name: Checkout nais-yaml
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: navikt/nais-yaml
           token: ${{ steps.get-token.outputs.token }}
