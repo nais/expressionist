@@ -19,9 +19,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v2
+        if: github.ref == 'refs/heads/master'
         with:
           context: .
           push: true
+          tags: ${{ env.IMAGE }}
+      - uses: docker/build-push-action@v2
+        if: github.ref != 'refs/heads/master'
+        with:
+          context: .
+          push: false
           tags: ${{ env.IMAGE }}
 
   nais-yaml:
