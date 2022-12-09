@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/nais/alerterator v0.0.0-20210921071257-6256c85a2c80
 	github.com/nais/liberator v0.0.0-20210920125427-7b63262ea97f
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.18.19
@@ -32,7 +32,7 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
