@@ -6,7 +6,7 @@ require (
 	github.com/nais/alerterator v0.0.0-20210921071257-6256c85a2c80
 	github.com/nais/liberator v0.0.0-20210920125427-7b63262ea97f
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.18.19
 	k8s.io/apimachinery v0.18.19
@@ -37,7 +37,7 @@ require (
 	golang.org/x/text v0.3.3 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	sigs.k8s.io/controller-runtime v0.6.5 // indirect
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.1 // indirect
