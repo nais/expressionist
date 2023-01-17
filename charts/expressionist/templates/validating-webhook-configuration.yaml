@@ -1,0 +1,28 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: expressionist
+  annotations:
+    cert-manager.io/inject-ca-from: nais/expressionist-serving-cert
+webhooks:
+  - name: expressionist.nais.io
+    rules:
+      - apiGroups:
+          - "nais.io"
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - alerts
+    failurePolicy: Fail
+    matchPolicy: Exact
+    sideEffects: None
+    admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      service:
+        namespace: nais
+        name: expressionist
+

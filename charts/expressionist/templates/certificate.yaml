@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    app.kubernetes.io/instance: expressionist
+    app.kubernetes.io/name: expressionist
+  name: expressionist-serving-cert
+  namespace: nais
+spec:
+  dnsNames:
+  - expressionist.nais.svc
+  - expressionist.nais.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: expressionist-selfsigned-issuer
+  secretName: expressionist

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expressionist
+  namespace: nais
+  labels:
+    app.kubernetes.io/instance: expressionist
+    app.kubernetes.io/name: expressionist
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: expressionist
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+      labels:
+        app.kubernetes.io/instance: expressionist
+        app.kubernetes.io/name: expressionist
+    spec:
+      imagePullSecrets:
+        - name: gpr-credentials
+      containers:
+      - name: expressionist
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: Always
+        command:
+          - /app/expressionist
+          - --log-level
+          - info
+          - --log-format
+          - json
+          - --cert
+          - /etc/expressionist/tls/tls.crt
+          - --key
+          - /etc/expressionist/tls/tls.key
+        ports:
+          - name: https
+            containerPort: 8443
+          - name: metrics
+            containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /isAlive
+            port: metrics
+          initialDelaySeconds: 3
+          periodSeconds: 15
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 65532
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - mountPath: /etc/expressionist/tls
+          name: expressionist
+      volumes:
+      - secret:
+          secretName: expressionist
+        name: expressionist

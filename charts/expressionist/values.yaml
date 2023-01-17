@@ -1,0 +1,4 @@
+image:
+  repository: ghcr.io/nais/expressionist
+  pullPolicy: IfNotPresent
+  tag: "2022-12-09-85e3bde"
