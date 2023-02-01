@@ -13,7 +13,7 @@ jobs:
       - run: |
           export version=$(date '+%Y-%m-%d')-$(git --no-pager log -1 --pretty=%h)
           echo "IMAGE=${IMAGE}:${version}" >> $GITHUB_ENV
-      - uses: docker/login-action@f75d088332b07a08afadf6ac53c74509b9453f12 # Use commit-sha1 instead of tag for security concerns
+      - uses: docker/login-action@3da7dc6e2b31f99ef2cb9fb4c50fb0971e0d0139 # Use commit-sha1 instead of tag for security concerns
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
