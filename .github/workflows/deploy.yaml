@@ -18,13 +18,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v3
+      - uses: docker/build-push-action@v4
         if: github.ref == 'refs/heads/master'
         with:
           context: .
           push: true
           tags: ${{ env.IMAGE }}
-      - uses: docker/build-push-action@v3
+      - uses: docker/build-push-action@v4
         if: github.ref != 'refs/heads/master'
         with:
           context: .
