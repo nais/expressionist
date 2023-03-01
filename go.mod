@@ -6,7 +6,7 @@ require (
 	github.com/nais/alerterator v0.0.0-20210921071257-6256c85a2c80
 	github.com/nais/liberator v0.0.0-20210920125427-7b63262ea97f
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.18.19
 	k8s.io/apimachinery v0.18.19
