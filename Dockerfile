@@ -1,6 +1,6 @@
 FROM prom/prometheus:latest as promtool
 
-FROM golang:1.19-alpine as builder
+FROM golang:1.20-alpine as builder
 ENV GOOS=linux
 ENV CGO_ENABLED=0
 COPY --from=promtool /bin/promtool /bin
